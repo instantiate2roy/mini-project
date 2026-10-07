@@ -10,7 +10,7 @@ class WeatherReport:
  
     date_format = "%a %d %b"  # example Wed 07 Oct"
  
-    def __init__(self, data_frame: pandas.DataFrame, place_name: str):
+    def __init__(self, data_frame: pandas.DataFrame, location: str):
         """
         constructor to inject external dependencies
 
@@ -19,7 +19,7 @@ class WeatherReport:
 
         """
         self.data_frame = data_frame
-        self.place_name = place_name
+        self.location = location
  
         self.t_max = self._find_column("Max temperature")
         self.t_min = self._find_column("Min temperature")
@@ -37,8 +37,7 @@ class WeatherReport:
         """
         return next(c for c in self.data_frame.columns if c.startswith(start))
  
-    @staticmethod
-    def _unit_of(column):
+    def _unit_of(self, column):
         """
         Get the unit from a column name like 'Max temperature (°C)'.
         """
@@ -56,7 +55,7 @@ class WeatherReport:
         """
         data_frame = self.data_frame
         hottest = data_frame[self.t_max].idxmax()
-        coldest = data_frame[self.t_max].idxmin()   # lowest daytime high
+        coldest = data_frame[self.t_max].idxmin()  
         coolest = data_frame[self.t_min].idxmin()
         wettest = data_frame[self.rain].idxmax()
         driest = data_frame[self.rain].idxmin()
@@ -82,7 +81,7 @@ class WeatherReport:
 
         # build the Markdown table
         lines = [
-            f"## {total_days}-day forecast for {self.place_name}",
+            f"**{total_days}-day forecast for {self.location}**",
             f"**From {data_frame.index[0]:%d %b} To {data_frame.index[-1]:%d %b %Y}**",
             "",
             "| Measure | Day | Value |",
@@ -107,7 +106,7 @@ class WeatherReport:
             .format(one_decimal)
             .background_gradient(subset=[self.t_max, self.t_min], cmap="coolwarm")
             .bar(subset=[self.rain], color="#9ecae1")
-            .set_caption(f"Daily forecast for {self.place_name}")
+            .set_caption(f"Daily forecast for {self.location}")
         )
         display(styled)
  
@@ -146,7 +145,7 @@ class WeatherReport:
         ax_temp.legend(temp_handles + rain_handles, temp_labels + rain_labels,
                        loc="upper left", fontsize=9)
  
-        ax_temp.set_title(f"Temperature range and precipitation: {self.place_name}")
+        ax_temp.set_title(f"Temperature range and precipitation: {self.location}")
         ax_temp.grid(axis="y", alpha=0.3)
         plt.tight_layout()
         plt.show()
