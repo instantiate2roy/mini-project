@@ -5,9 +5,9 @@ class OpenMeteo(WeatherForecast):
     """
     Open meteo-forecasting class
     """
-    forecast_end_point = "https://api.open-meteo.com/v1/forecast"
+    forecast_end_point: str = "https://api.open-meteo.com/v1/forecast"
     
-    codes = {
+    codes: dict[int, str] = {
         0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Depositing rime fog", 
         51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle", 56: "Light freezing drizzle", 57: "Dense freezing drizzle",
         61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain", 66: "Light freezing rain", 67: "Heavy freezing rain", 
@@ -16,7 +16,7 @@ class OpenMeteo(WeatherForecast):
         99: "Thunderstorm with heavy hail",
         }
 
-    fields = {
+    fields: dict[str, str] = {
         "time": "Date",
         "weather_code": "Weather code",
         "temperature_2m_max": "Max temperature",
@@ -25,7 +25,8 @@ class OpenMeteo(WeatherForecast):
         "wind_speed_10m_max": "Max wind speed",
     }
 
-    def get_forecast(self, lat:float, lon:float, n_days:int = 7, time_zone ='auto', time_out = 10):
+    def get_forecast(self, lat: float, lon: float, n_days: int = 7, time_zone: str = 'auto',
+                     time_out: float = 10) -> dict:
         """
         Get forcast info for a location for n_days
         """
@@ -43,7 +44,7 @@ class OpenMeteo(WeatherForecast):
         }
         return self.make_request(base_url, params, {}, time_out).json()
     
-    def forecast_to_dataframe(self, forecast):
+    def forecast_to_dataframe(self, forecast: dict) -> pandas.DataFrame:
         """
         map forecast JSON into a readable pandas dataframe.
         """

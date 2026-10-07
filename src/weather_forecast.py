@@ -10,9 +10,12 @@ class WeatherForecast(ABC):
     weather forecast class
     """
     #define my end-points
-    geo_code_uri_end_points = "https://geocoding-api.open-meteo.com/v1/search"
+    geo_code_uri_end_points: str = "https://geocoding-api.open-meteo.com/v1/search"
+
+    def __init__(self, email:str):
+        self.email=email
         
-    def geocode(self, location:str, time_out:int = 10):
+    def geocode(self, location: str, time_out: float = 10) -> dict:
         """
         Method to get geocode details
         """
@@ -28,20 +31,21 @@ class WeatherForecast(ABC):
         return self.__process_multi_result_geocode(results, location)
 
     @abstractmethod
-    def get_forecast(self, lat:float, lon:float, n_days:int = 7, time_zone ='auto', time_out = 10):
+    def get_forecast(self, lat: float, lon: float, n_days: int = 7, time_zone: str = 'auto',
+                     time_out: float = 10) -> dict:
         """
         Absract Get forcast info for a location for n_days
         """
         pass
 
     @abstractmethod
-    def forecast_to_dataframe(self, forecast):
+    def forecast_to_dataframe(self, forecast: dict) -> pandas.DataFrame:
         """
         map forecast JSON into a readable pandas dataframe.
         """
         pass
 
-    def make_request(self, uri: str, params: dict, headers:dict, time_out: int = 10, 
+    def make_request(self, uri: str, params: dict, headers: dict, time_out: float = 10,
                        max_retries: int = 3, initial_delay: float = 1.0, 
                        max_delay: float = 10.0) -> requests.Response:
         """
@@ -59,6 +63,7 @@ class WeatherForecast(ABC):
                 if status < 500:
                     raise HttpRequestException(uri, attempt, f"HTTP {status} {e.response.reason}") from e
                 error = e
+                reason = f"HTTP {status} {e.response.reason}"
             except  requests.Timeout as e:
                 error = e
                 reason = f"timed out after {time_out} s"
@@ -74,7 +79,7 @@ class WeatherForecast(ABC):
         
         return resp
 
-    def __process_multi_result_geocode(self, results, location):
+    def __process_multi_result_geocode(self, results: list[dict], location: str) -> dict:
         """
         Handle  multi record responses for geocode info
         """
