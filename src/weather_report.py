@@ -8,9 +8,9 @@ class WeatherReport:
     Class for generating, displaying table and chart for a daily forecast DataFrame
     """
  
-    date_format = "%a %d %b"  # example Wed 07 Oct"
+    date_format: str = "%a %d %b"  # example Wed 07 Oct"
  
-    def __init__(self, data_frame: pandas.DataFrame, location: str):
+    def __init__(self, data_frame: pandas.DataFrame, location: str) -> None:
         """
         constructor to inject external dependencies
 
@@ -18,38 +18,38 @@ class WeatherReport:
         so every part of the report uses the same names.
 
         """
-        self.data_frame = data_frame
-        self.location = location
+        self.data_frame: pandas.DataFrame = data_frame
+        self.location: str = location
  
-        self.t_max = self._find_column("Max temperature")
-        self.t_min = self._find_column("Min temperature")
-        self.rain = self._find_column("Precipitation")
-        self.wind = self._find_column("Max wind speed")
+        self.t_max: str = self._find_column("Max temperature")
+        self.t_min: str = self._find_column("Min temperature")
+        self.rain: str = self._find_column("Precipitation")
+        self.wind: str = self._find_column("Max wind speed")
  
-        self.temp_unit = self._unit_of(self.t_max)
-        self.rain_unit = self._unit_of(self.rain)
-        self.wind_unit = self._unit_of(self.wind)
+        self.temp_unit: str = self._unit_of(self.t_max)
+        self.rain_unit: str = self._unit_of(self.rain)
+        self.wind_unit: str = self._unit_of(self.wind)
  
     
-    def _find_column(self, start):
+    def _find_column(self, start: str) -> str:
         """
         Find a column by the start of its name, so units like (°C) or (°F) don't matter.
         """
         return next(c for c in self.data_frame.columns if c.startswith(start))
  
-    def _unit_of(self, column):
+    def _unit_of(self, column: str) -> str:
         """
         Get the unit from a column name like 'Max temperature (°C)'.
         """
         return column.split("(")[-1].rstrip(")")
  
-    def _day(self, date):
+    def _day(self, date: pandas.Timestamp) -> str:
         """
         Format a date for display, e.g. 'Wed 07 Oct'.
         """
         return date.strftime(self.date_format)
  
-    def show_summary(self):
+    def show_summary(self) -> None:
         """
         Show a short summary of the forecast as a table.
         """
@@ -91,7 +91,7 @@ class WeatherReport:
 
         display(Markdown("\n".join(lines)))
  
-    def show_table(self):
+    def show_table(self) -> None:
         """
         Show the forecast table.
         """
@@ -110,7 +110,7 @@ class WeatherReport:
         )
         display(styled)
  
-    def plot(self):
+    def plot(self) -> None:
         """
         Plot the temperature range as a band with precipitation as bars.
         """
@@ -150,7 +150,7 @@ class WeatherReport:
         plt.tight_layout()
         plt.show()
  
-    def show(self):
+    def show(self) -> None:
         """
         Show the summary, table and chart.
         """

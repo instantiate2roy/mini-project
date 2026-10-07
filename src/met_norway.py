@@ -1,17 +1,18 @@
 from .weather_forecast import WeatherForecast
 import pandas
 from collections import Counter
+from collections.abc import Iterator
 from zoneinfo import ZoneInfo
 
 class MetNorway(WeatherForecast):
     """
     Met norway forecasting class
     """
-    forecast_end_point = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+    forecast_end_point: str = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
     
-    unit_names = {"celsius": "°C", "fahrenheit": "°F"}
+    unit_names: dict[str, str] = {"celsius": "°C", "fahrenheit": "°F"}
     
-    met_symbols = {
+    met_symbols: dict[str, str] = {
         "clearsky": "Clear sky", "fair": "Fair", "partlycloudy": "Partly cloudy",
         "cloudy": "Cloudy", "fog": "Fog",
         "lightrain": "Light rain", "rain": "Rain", "heavyrain": "Heavy rain",
@@ -26,8 +27,8 @@ class MetNorway(WeatherForecast):
         "lightsnow": "Light snow", "snow": "Snow", "heavysnow": "Heavy snow",
     }
 
-
-    def get_forecast(self, lat:float, lon:float, email:str, n_days:int = 7, time_zone ='UTC', time_out = 10):
+    def get_forecast(self, lat: float, lon: float, n_days: int = 7, time_zone: str = 'UTC',
+                     time_out: float = 10) -> dict:
         """
         Get forcast info for a location for n_days
         """
@@ -37,7 +38,7 @@ class MetNorway(WeatherForecast):
 
         #met norway rejects coordinates with more than 4 decimals
         params = {"lat": round(lat, 4), "lon": round(lon, 4)}
-        headers = {"User-Agent": f"weather-mini-project/1.0 ({email})"}
+        headers = {"User-Agent": f"weather-mini-project/1.0 ({self.email})"}
         forecast = self.make_request(self.forecast_end_point, params, headers, time_out).json()
 
         # MET has no daily values or time zone option, so keep what forecast_to_dataframe needs
@@ -45,7 +46,7 @@ class MetNorway(WeatherForecast):
         forecast["n_days"] = n_days
         return forecast
 
-    def forecast_to_dataframe(self, forecast):
+    def forecast_to_dataframe(self, forecast: dict) -> pandas.DataFrame:
         """
         Group MET's hourly and 6-hourly time steps into a daily pandas dataframe,
         using the same column names as the OpenMeteo class.
@@ -80,7 +81,7 @@ class MetNorway(WeatherForecast):
         # same column order as OpenMeteo: weather first
         return daily[["Weather"] + [c for c in daily.columns if c != "Weather"]]
 
-    def __without_overlaps(self, forecast):
+    def __without_overlaps(self, forecast: dict) -> Iterator[tuple[dict, dict | None]]:
         """
         met norway gives 1-hour periods for the first days, then 6-hour periods.
         """
@@ -98,7 +99,7 @@ class MetNorway(WeatherForecast):
                 period = None
             yield entry, period
 
-    def __read_time_step(self, entry_and_period, tz):
+    def __read_time_step(self, entry_and_period: tuple[dict, dict | None], tz: ZoneInfo) -> dict:
         """
         Pull the values for one time step, with its time converted to local time.
         """
@@ -112,7 +113,7 @@ class MetNorway(WeatherForecast):
             "symbol": period["summary"]["symbol_code"] if period else None,
         }
 
-    def __describe(self, symbols):
+    def __describe(self, symbols: pandas.Series) -> str:
         """
         Most common weather symbol of the day, as readable text.
         """

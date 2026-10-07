@@ -1,1 +1,24 @@
-Need to install tkinter
+# Python 3.10 or newer (the code uses X | None type hints and zoneinfo)
+
+# HTTP calls to Open-Meteo and MET Norway (urllib, json, time and zoneinfo are in the standard library)
+requests>=2.31
+
+# Reads the contact email from a .env file, so it is never hardcoded in the notebook
+python-dotenv>=1.0
+
+# Forecast tables and charts
+pandas>=2.0
+matplotlib>=3.8
+
+# pandas DataFrame.style, used for the formatted forecast table, needs jinja2
+jinja2>=3.1.2
+
+# Time zone data for zoneinfo on systems without one (Windows)
+tzdata>=2024.1
+
+# Running the notebook (ipykernel also provides IPython.display for Markdown output)
+notebook>=7.0
+ipykernel>=6.0
+
+# Running the tests (pytest.ini uses pythonpath, which needs pytest 7+)
+pytest>=7.0
