@@ -1,0 +1,86 @@
+{
+  "countries": {
+    "UG": {
+      "country_name": "Uganda",
+      "currency": "UGX",
+      "tax_types": {
+        "PAYE": {
+          "name": "Pay As You Earn",
+          "calculation_method": "progressive_bands",
+          "period": "monthly",
+          "tax_schedules": {
+            "resident": {
+              "bands": [
+                { "lower": 0, "upper": 335000, "rate": 0.0, "base_tax": 0 },
+                { "lower": 335000, "upper": 410000, "rate": 0.2, "base_tax": 0 },
+                { "lower": 410000, "upper": 485000, "rate": 0.25, "base_tax": 15000 },
+                { "lower": 485000, "upper": 10000000, "rate": 0.3, "base_tax": 33750 },
+                { "lower": 10000000, "upper": null, "rate": 0.4, "base_tax": 2888250 }
+              ]
+            },
+            "non_resident": {
+              "bands": [
+                { "lower": 0, "upper": 335000, "rate": 0.1, "base_tax": 0 },
+                { "lower": 335000, "upper": 410000, "rate": 0.2, "base_tax": 33500 },
+                { "lower": 410000, "upper": 10000000, "rate": 0.3, "base_tax": 48500 },
+                { "lower": 10000000, "upper": null, "rate": 0.4, "base_tax": 2925500 }
+              ]
+            }
+          }
+        },
+        "NSSF": {
+          "name": "National Social Security Fund",
+          "calculation_method": "flat_rate",
+          "period": "monthly",
+          "base": "gross_monthly",
+          "employee_rate": 0.05,
+          "employer_rate": 0.1,
+          "cap": null,
+          "pre_tax_for_paye": false
+        },
+        "LST": {
+          "name": "Local Service Tax",
+          "calculation_method": "lookup_table",
+          "period": "annual",
+          "base": "gross_monthly",
+          "brackets": [
+            { "lower": 0, "upper": 100000, "annual_amount": 0 },
+            { "lower": 100000, "upper": 200000, "annual_amount": 5000 },
+            { "lower": 200000, "upper": 300000, "annual_amount": 10000 },
+            { "lower": 300000, "upper": 400000, "annual_amount": 20000 },
+            { "lower": 400000, "upper": 500000, "annual_amount": 30000 },
+            { "lower": 500000, "upper": 600000, "annual_amount": 40000 },
+            { "lower": 600000, "upper": 700000, "annual_amount": 60000 },
+            { "lower": 700000, "upper": 800000, "annual_amount": 70000 },
+            { "lower": 800000, "upper": 900000, "annual_amount": 80000 },
+            { "lower": 900000, "upper": 1000000, "annual_amount": 90000 },
+            { "lower": 1000000, "upper": null, "annual_amount": 100000 }
+          ],
+          "installments": 4,
+          "installment_months": [7, 8, 9, 10],
+          "pre_tax_for_paye": true
+        },
+        "VAT": {
+          "name": "Value Added Tax",
+          "calculation_method": "category_rates",
+          "period": "per_transaction",
+          "rates": {
+            "standard": 0.18,
+            "zero_rated": 0.0,
+            "exempt": null
+          },
+          "default_category": "standard",
+          "registration_threshold_annual": 300000000,
+          "withholding_vat_rate": 0.06
+        },
+        "CIT": {
+          "name": "Corporate Income Tax",
+          "calculation_method": "flat_rate",
+          "period": "annual",
+          "residency": "resident",
+          "rate": 0.3
+        }
+      }
+    }
+  }
+}
