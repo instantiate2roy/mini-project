@@ -79,6 +79,32 @@
           "period": "annual",
           "residency": "resident",
           "rate": 0.3
+        },
+        "WHT": {
+          "name": "Withholding Tax",
+          "calculation_method": "category_rates",
+          "period": "per_payment",
+          "rates": {
+            "dividend": 0.15,
+            "dividend_listed_to_individual": 0.1,
+            "interest": 0.15,
+            "debenture_interest_abroad": 0.05,
+            "royalty_non_resident": 0.15,
+            "betting_winnings": 0.15,
+            "telecom_commission": 0.1,
+            "insurance_commission": 0.1,
+            "public_entertainer": 0.06
+          }
+        },
+        "RENTAL": {
+          "name": "Rental Income Tax",
+          "calculation_method": "threshold_flat_rate",
+          "period": "annual",
+          "residency": "resident",
+          "landlords": {
+            "individual": { "threshold": 2820000, "rate": 0.12, "expense_cap": 0 },
+            "company": { "threshold": 0, "rate": 0.3, "expense_cap": 0.5 }
+          }
         }
       }
     }
