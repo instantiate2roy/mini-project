@@ -13,3 +13,6 @@ class TaxContext:
     month: int | None = None
     amount: Decimal = Decimal("0")
     vat_category: str | None = None
+    payment_type: str | None = None         
+    landlord_type: str = "individual"       
+    expenses: Decimal = Decimal("0")        
