@@ -5,7 +5,7 @@ from pathlib import Path
 from .tax_result import TaxResult
 from .tax_context import TaxContext
 
-class Tax():
+class Tax(ABC):
 
     code: str
     tax_config_file = tax_config_file = Path(__file__).resolve().parent.parent / "configs" / "tax.json"
