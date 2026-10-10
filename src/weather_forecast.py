@@ -2,7 +2,6 @@ import requests
 import time
 from .http_request_exception import HttpRequestException
 import pandas
-from IPython.display import display, Markdown
 from abc import ABC, abstractmethod
 
 class WeatherForecast(ABC):
