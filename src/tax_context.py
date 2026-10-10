@@ -7,8 +7,9 @@ class TaxContext:
     """
     Inputs for a tax calculation.
     """
-
     gross_monthly: Decimal = Decimal("0")
     allowance: Decimal = Decimal("0") 
     residency: str = "resident"
-    
+    month: int | None = None
+    amount: Decimal = Decimal("0")
+    vat_category: str | None = None

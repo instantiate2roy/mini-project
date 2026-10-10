@@ -14,6 +14,7 @@ class Nssf(Tax):
         self.employee_rate = Decimal(str(config['employee_rate']))
         self.employer_rate = Decimal(str(config['employer_rate']))
         self.cap = None if config['cap'] is None else Decimal(str(config['cap']))
+        self.pre_tax_for_paye = config['pre_tax_for_paye']
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
         # 1. Contribution base is gross monthly pay (allowance not included yet)

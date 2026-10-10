@@ -7,4 +7,4 @@ class TaxResult:
     code: str
     amount: Decimal
     taxable_base: Decimal
- 
+    employer_amount: Decimal = Decimal("0")
