@@ -10,11 +10,11 @@ class Paye(Tax):
     PAYE tax class
     """
     
-    def __init__(self, country_code = "UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code='PAYE'
+        self.code: str = 'PAYE'
         #populate tax schedules
-        self.schedules = self.tax_configurations['tax_types'][self.code]['tax_schedules']
+        self.schedules: dict = self.tax_configurations['tax_types'][self.code]['tax_schedules']
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
         """
@@ -41,7 +41,7 @@ class Paye(Tax):
  
         return TaxResult(code=self.code, amount=tax, taxable_base=taxable_income)
  
-    def _determine_tax_band(self, bands: list, income: Decimal) -> dict:
+    def _determine_tax_band(self, bands: list[dict], income: Decimal) -> dict:
         """
         A band applies when lower < income <= upper. upper None means no cap.
         """

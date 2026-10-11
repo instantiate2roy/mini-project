@@ -13,15 +13,15 @@ class Lst(Tax):
     - installment months are from July and October
     """
 
-    def __init__(self, country_code="UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code = 'LST'
+        self.code: str = 'LST'
 
         config = self.tax_configurations['tax_types'][self.code]
         #populate the tax brackets, installments, and installment months
-        self.brackets, self.installments, self.installment_months  = [config['brackets']
-                                                                      , config['installments']
-                                                                      , config['installment_months']]
+        self.brackets: list[dict] = config['brackets']
+        self.installments: int = config['installments']
+        self.installment_months: list[int] = config['installment_months']
         
 
     def calculate(self, ctx: TaxContext) -> TaxResult:

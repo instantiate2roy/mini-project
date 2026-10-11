@@ -11,8 +11,8 @@ class WeatherForecast(ABC):
     #define my end-points
     geo_code_uri_end_points: str = "https://geocoding-api.open-meteo.com/v1/search"
 
-    def __init__(self, email:str):
-        self.email=email
+    def __init__(self, email: str) -> None:
+        self.email: str = email
         
     def geocode(self, location: str, time_out: float = 10) -> dict:
         """

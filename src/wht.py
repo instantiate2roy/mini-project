@@ -10,12 +10,12 @@ class Wht(Tax):
     Withholding tax class
     """
 
-    def __init__(self, country_code="UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code = 'WHT'
+        self.code: str = 'WHT'
 
         config = self.tax_configurations['tax_types'][self.code]
-        self.rates = {name: Decimal(str(rate)) for name, rate in config['rates'].items()}
+        self.rates: dict[str, Decimal] = {name: Decimal(str(rate)) for name, rate in config['rates'].items()}
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
         """
@@ -30,7 +30,7 @@ class Wht(Tax):
 
         return TaxResult(code=self.code, amount=tax, taxable_base=payment)
 
-    def _validation(self, ctx:TaxContext) -> None:
+    def _validation(self, ctx: TaxContext) -> None:
         """
         Validation
         """

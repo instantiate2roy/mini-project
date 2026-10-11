@@ -44,9 +44,9 @@ def test_wht_rounds_to_whole_shillings():
 
 
 def test_wht_needs_a_known_payment_type():
-    with pytest.raises(ValueError, match='needs ctx.payment_type'):
+    with pytest.raises(ValueError, match="Missing or Unknown WHT payment type 'None'"):
         WHT.calculate(TaxContext(amount=Decimal(1_000)))
-    with pytest.raises(ValueError, match="Unknown WHT payment type 'salary'"):
+    with pytest.raises(ValueError, match="Missing or Unknown WHT payment type 'salary'"):
         wht_for(1_000, 'salary')
 
 
@@ -85,8 +85,8 @@ def test_company_rental_tax_with_the_expense_cap(expenses, expected):
 
 
 @pytest.mark.parametrize('ctx, message', [
-    (TaxContext(amount=Decimal(1), residency='non_resident'), "residency 'non_resident'"),
-    (TaxContext(amount=Decimal(1), landlord_type='trust'), "landlord type 'trust'"),
+    (TaxContext(amount=Decimal(1), residency='non_resident'), 'No rental tax rules configured for non_resident'),
+    (TaxContext(amount=Decimal(1), landlord_type='trust'), "Unknown landlord type 'trust'"),
     (TaxContext(amount=Decimal(-1)), "Rent can't be negative"),
     (TaxContext(amount=Decimal(1), expenses=Decimal(-1)), "Expenses can't be negative"),
 ])
