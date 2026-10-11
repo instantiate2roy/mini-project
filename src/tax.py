@@ -1,5 +1,6 @@
 import json
 from abc import ABC, abstractmethod
+from decimal import Decimal
 from pathlib import Path
 from .tax_result import TaxResult
 from .tax_context import TaxContext
@@ -21,7 +22,8 @@ class Tax(ABC):
         if not self.tax_config_file.exists(): #Raise exception if no config file
             raise TaxConfigError(f"Tax config not found: {self.tax_config_file}")
  
-        data = json.loads(self.tax_config_file.read_text(encoding="utf-8"))
+        #make field values like rates decimal directly from the config
+        data = json.loads(self.tax_config_file.read_text(encoding="utf-8"), parse_float=Decimal)
         if country_code not in data["countries"]:
             raise TaxConfigError(f"Country '{country_code}' not found in {self.tax_config_file.name}")
         self.tax_configurations: dict = data["countries"][country_code]

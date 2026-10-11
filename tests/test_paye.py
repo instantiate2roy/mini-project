@@ -114,3 +114,30 @@ def test_no_schedule_before_it_takes_effect():
 def test_schedule_applies_from_its_first_day():
     ctx = TaxContext(gross_monthly=Money(1_000_000), pay_date=date(2026, 7, 1))
     assert PAYE.calculate(ctx).amount == Money(188_250)
+
+
+# Allowances: PAYE is charged on gross pay plus allowances
+
+def test_allowance_is_added_to_gross_pay():
+    ctx = TaxContext(gross_monthly=Money(900_000), allowance=Money(100_000))
+    result = PAYE.calculate(ctx)
+    assert result.taxable_base == Money(1_000_000)
+    assert result.amount == Money(188_250)          # same as 1,000,000 of gross pay
+
+
+def test_allowance_can_move_pay_into_a_higher_band():
+    # 300,000 alone is tax-free; with a 50,000 allowance, 15,000 falls in the 20% band
+    ctx = TaxContext(gross_monthly=Money(300_000), allowance=Money(50_000))
+    assert PAYE.calculate(ctx).amount == Money(3_000)
+
+
+def test_negative_allowance_is_rejected():
+    with pytest.raises(InvalidIncomeError, match="Allowance can't be negative"):
+        PAYE.calculate(TaxContext(gross_monthly=Money(1_000_000), allowance=Money(-1)))
+
+
+# Config: numbers are read as Decimal, never float
+
+def test_config_rates_are_read_as_decimal():
+    rate = PAYE.tax_configurations['tax_types']['PAYE']['tax_schedules']['resident']['bands'][1]['rate']
+    assert isinstance(rate, Decimal) and rate == Decimal('0.2')
