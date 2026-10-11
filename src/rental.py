@@ -11,13 +11,13 @@ class Rental(Tax):
     Note: only applies to those based in UG, have to be residents
     """
 
-    def __init__(self, country_code="UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code = 'RENTAL'
+        self.code: str = 'RENTAL'
         config = self.tax_configurations['tax_types'][self.code]
 
-        self.residency = config['residency']
-        self.landlords = {
+        self.residency: str = config['residency']
+        self.landlords: dict[str, dict[str, Decimal]] = {
             kind: {key: Decimal(str(value)) for key, value in rules.items()}
             for kind, rules in config['landlords'].items()
         }
@@ -43,7 +43,7 @@ class Rental(Tax):
 
         return TaxResult(code=self.code, amount=tax, taxable_base=chargeable)
 
-    def _validation(self, ctx:TaxContext) -> None:
+    def _validation(self, ctx: TaxContext) -> None:
         """
         Run validation on tax context input
         """

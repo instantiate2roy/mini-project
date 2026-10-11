@@ -19,7 +19,7 @@ class Money:
     amount: Decimal
     currency: str = "UGX"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.amount, float) or not isinstance(self.amount, (Decimal, int)):
             raise TypeError(f"Money needs a Decimal or int, not {type(self.amount).__name__}")
 
@@ -45,7 +45,7 @@ class Money:
         self._check_same_currency(other)
         return Money(self.amount + other.amount, self.currency)
 
-    def __radd__(self, other) -> Money:
+    def __radd__(self, other: Money | int) -> Money:
         """
         sum starts adding from 0, so 0 + Money has to work
         """

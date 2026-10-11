@@ -10,16 +10,16 @@ class Nssf(Tax):
     NSSF tax class
     """
 
-    def __init__(self, country_code="UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code = 'NSSF'
+        self.code: str = 'NSSF'
 
         config = self.tax_configurations['tax_types'][self.code]
 
         #populate the employee, employer and pre tax values
-        self.employee_rate, self.employer_rate, self.pre_tax_for_paye = [Decimal(str(config['employee_rate'])), 
-                                                                         Decimal(str(config['employer_rate'])), 
-                                                                         config['pre_tax_for_paye']]
+        self.employee_rate: Decimal = Decimal(str(config['employee_rate']))
+        self.employer_rate: Decimal = Decimal(str(config['employer_rate']))
+        self.pre_tax_for_paye: bool = config['pre_tax_for_paye']
         
     def calculate(self, ctx: TaxContext) -> TaxResult:
         """

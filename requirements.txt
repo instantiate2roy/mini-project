@@ -6,11 +6,11 @@ requests>=2.31
 # Reads the contact email from a .env file, so it is never hardcoded in the notebook
 python-dotenv>=1.0
 
-# Forecast tables and charts
+# Tables and charts in both notebooks (the tax engine itself only uses the standard library: decimal, dataclasses, json)
 pandas>=2.0
 matplotlib>=3.8
 
-# pandas DataFrame.style, used for the formatted forecast table, needs jinja2
+# pandas DataFrame.style, used for the formatted tables in both notebooks, needs jinja2
 jinja2>=3.1.2
 
 # Time zone data for zoneinfo on systems without one (Windows)
@@ -22,3 +22,6 @@ ipykernel>=6.0
 
 # Running the tests (pytest.ini uses pythonpath, which needs pytest 7+)
 pytest>=7.0
+
+# Mini-project 2: property-based tests (tax is never negative, never goes down as income rises, never exceeds income)
+hypothesis>=6.0

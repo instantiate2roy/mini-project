@@ -10,12 +10,13 @@ class Vat(Tax):
     VAT class
     """
 
-    def __init__(self, country_code="UG"):
+    def __init__(self, country_code: str = "UG") -> None:
         super().__init__(country_code)
-        self.code = 'VAT'
+        self.code: str = 'VAT'
         config = self.tax_configurations['tax_types'][self.code]
 
-        self.rates, self.default_category = [config['rates'], config['default_category']]
+        self.rates: dict[str, float | None] = config['rates']
+        self.default_category: str = config['default_category']
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
         """
