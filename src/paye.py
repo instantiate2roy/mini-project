@@ -23,6 +23,7 @@ class Paye(Tax):
         """
         Formula
         paye = base tax + (rate x (income - lower band limit))
+        income = gross monthly pay + allowances
         """
         
         self._validate(ctx)
@@ -31,7 +32,7 @@ class Paye(Tax):
 
         bands = schedule['bands']
  
-        taxable_income = ctx.gross_monthly #allowance not included
+        taxable_income = ctx.gross_monthly + ctx.allowance #gross pay plus allowances
  
         band = self._determine_tax_band(bands, taxable_income.amount)
  
@@ -40,8 +41,7 @@ class Paye(Tax):
         base_tax = Money(Decimal(str(band['base_tax'])))
         tax = base_tax + rate * (taxable_income - lower_limit)
  
-        #Money rounds to nearest whole number
- 
+        #round to nearest whole number
         return TaxResult(code=self.code, amount=tax, taxable_base=taxable_income)
  
     def _determine_tax_band(self, bands: list[dict], income: Decimal) -> dict:
@@ -71,3 +71,6 @@ class Paye(Tax):
         
         if ctx.gross_monthly < Money.zero():
             raise InvalidIncomeError(f"Gross monthly pay can't be negative: {ctx.gross_monthly}")
+        
+        if ctx.allowance < Money.zero():
+            raise InvalidIncomeError(f"Allowance can't be negative: {ctx.allowance}")
