@@ -200,6 +200,13 @@ def test_negative_amounts_are_rejected(tax, ctx):
         tax.calculate(ctx)
 
 
+def test_income_outside_every_lst_bracket_is_a_config_error():
+    lst = Lst()
+    lst.brackets = [{'lower': 0, 'upper': 100_000, 'annual_amount': 0}]
+    with pytest.raises(TaxConfigError, match='No LST bracket covers an income of 200000'):
+        lst.calculate(TaxContext(gross_monthly=Money(200_000), month=7))
+
+
 def test_lst_month_must_be_1_to_12():
     with pytest.raises(InvalidContextError, match='1-12, not 13'):
         Lst().calculate(TaxContext(gross_monthly=Money(1_500_000), month=13))

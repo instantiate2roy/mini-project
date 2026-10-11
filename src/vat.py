@@ -17,7 +17,7 @@ class Vat(Tax):
         self.code: str = 'VAT'
         config = self.tax_configurations['tax_types'][self.code]
 
-        self.rates: dict[str, float | None] = config['rates']
+        self.rates: dict[str, Decimal | None] = config['rates']    # the config is read with parse_float=Decimal
         self.default_category: str = config['default_category']
 
     def calculate(self, ctx: TaxContext) -> TaxResult:

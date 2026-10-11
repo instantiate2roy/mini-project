@@ -55,17 +55,17 @@ pytest
 | `src/met_norway.py` | `MetNorway`: MET Norway Locationforecast 2.0, with hourly and 6-hourly steps grouped into local days under the same column names as `OpenMeteo` |
 | `src/weather_report.py` | `WeatherReport`: summary table, formatted forecast table, and temperature and precipitation chart |
 | `src/http_request_exception.py` | `HttpRequestException`: raised when a request still fails after every retry |
-| `project2_tax_engine.ipynb` | Mini-project 2: PAYE calculator, payroll pipeline and the order of deductions, VAT module, corporate income tax, and Extension A (withholding and rental income tax) |
-| `configs/tax.json` | Uganda's tax rates, PAYE bands, LST brackets, VAT categories and WHT rates, read by every tax class |
-| `src/tax.py` | `Tax`: abstract base class that loads the country's settings from `configs/tax.json` and defines `calculate(ctx: TaxContext) -> TaxResult` |
-| `src/tax_context.py`, `src/tax_result.py` | `TaxContext` (the inputs) and `TaxResult` (the tax, its base and the employer's share), as frozen dataclasses |
+| `project2_tax_engine.ipynb` | Mini-project 2: PAYE calculator, payroll pipeline and the order of deductions, VAT module, corporate income tax, Extension A (withholding and rental income tax), and the two discussion questions (why float is unsafe, and where inheritance is and isn't used) |
+| `configs/tax.json` | Uganda's tax rates, PAYE bands (with the date each schedule takes effect), LST brackets, VAT categories and WHT rates, read by every tax class |
+| `src/tax.py` | `Tax`: abstract base class that loads the country's settings from `configs/tax.json`, reading every number as a `Decimal`, and defines `calculate(ctx: TaxContext) -> TaxResult` |
+| `src/tax_context.py`, `src/tax_result.py` | `TaxContext` (the inputs, including the pay date) and `TaxResult` (the tax, its base and the employer's share), as frozen dataclasses. Every amount is `Money`, and `TaxContext` rejects anything else |
 | `src/money.py` | `Money`: UGX amount stored as a `Decimal`, rounded to whole shillings, with arithmetic and comparison operators |
 | `src/error.py` | `TaxError` and its subclasses `InvalidIncomeError`, `NoScheduleForDateError`, `TaxConfigError` and `InvalidContextError` |
-| `src/paye.py`, `src/nssf.py`, `src/lst.py` | PAYE (resident and non-resident bands), NSSF and Local Service Tax |
+| `src/paye.py`, `src/nssf.py`, `src/lst.py` | PAYE on gross pay plus allowances (resident and non-resident schedules, chosen by pay date), NSSF and Local Service Tax |
 | `src/vat.py`, `src/cit.py` | VAT by supply category, and corporate income tax |
 | `src/wht.py`, `src/rental.py` | Extension A: withholding tax by payment type, and rental income tax for individuals and companies |
 | `tests/test_weather_forecast.py` | Mini-project 1: parsing, geocoding, requests, retries and the report |
-| `tests/test_paye.py` | Mini-project 2: PAYE at every band edge, and hypothesis property tests |
+| `tests/test_paye.py` | Mini-project 2: PAYE at every band edge, allowances, schedule dates, errors, and hypothesis property tests |
 | `tests/test_tax_engine.py` | Mini-project 2: `Money`, the error classes, the `Tax` base class, NSSF, LST, VAT and corporate income tax |
 | `tests/test_wht_rental.py` | Mini-project 2: withholding and rental income tax, with hypothesis property tests |
 | `tests/data/` | Sample JSON used by the mini-project 1 tests (see below) |
@@ -117,6 +117,8 @@ The full report (data flow, licensing, reliability and privacy) is at the end of
 - **VAT:** on the sample invoices, output VAT on sales is UGX 2,610,000 and input VAT on purchases is 1,116,000, so 1,494,000 is payable. Zero-rated and exempt invoices both carry no VAT.
 - **Corporate income tax:** revenue of UGX 880,000,000 minus allowable deductions of 435,000,000 leaves chargeable income of 445,000,000, taxed at 30%: 133,500,000. Another 98,000,000 of costs, such as fines and income tax paid, are not deductible.
 - **Extension A:** withholding tax ranges from 5% (debenture interest paid abroad) to 15% (dividends, interest, royalties and betting winnings). Individuals pay 12% rental tax on annual rent above 2,820,000; companies pay 30% after expenses, which can cut chargeable rent by at most half.
+- **Allowances and dates:** PAYE is charged on gross pay plus allowances, so a 50,000 allowance on 300,000 of pay moves 15,000 into the 20% band (3,000 tax). The schedule in force on the pay date is used, and a date before it takes effect (1 July 2026 in `configs/tax.json`) raises `NoScheduleForDateError`.
+- **Nothing fails silently:** a negative income or allowance raises `InvalidIncomeError`, an unknown residency, VAT category or payment type raises `InvalidContextError`, and an income that no band in the config covers raises `TaxConfigError`. A plain number or float passed as an amount is rejected before any tax is worked out.
 - **Properties:** hypothesis checks thousands of incomes and finds that PAYE is never negative, never goes down when income goes up, and never exceeds income.
 
 ## AI-use declaration
@@ -124,7 +126,7 @@ The full report (data flow, licensing, reliability and privacy) is at the end of
 I used AI tools while working on this project:
 
 - **Claude (Anthropic):**
-  - Building the tests (`tests/test_weather_forecast.py` and `tests/test_tax_engine.py`), the sample JSON in `tests/data/`, and `pytest.ini`, and updating `tests/test_wht_rental.py` to the current error messages.
+  - Building the tests (`tests/test_weather_forecast.py` and `tests/test_tax_engine.py`), the sample JSON in `tests/data/`, and `pytest.ini`. Updating `tests/test_paye.py` and `tests/test_wht_rental.py` to the current error messages, and to check for the custom exception classes and gaps in the config.
   - Drafting this README and `requirements.txt`.
   - The fake connectivity simulation: replacing `requests.get` with a version that raises `ConnectionError`, and `time.sleep` with a recorder, so the no-network case and the retry delays can be shown without a real outage.
   - Code review of my code for correctness, for both mini-projects.
