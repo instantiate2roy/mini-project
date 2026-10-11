@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import Decimal
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError
 
 
 class Cit(Tax):
@@ -31,11 +32,11 @@ class Cit(Tax):
         
         #CIT only applies for companies based in UG
         if ctx.residency != self.residency:
-            raise ValueError(f"CIT only applies for for tax residents")
+            raise InvalidContextError(f"CIT only applies for for tax residents")
 
         #if value is negative, take 0 as the chargeable
-        chargeable_income = max(ctx.amount, Decimal("0"))
+        chargeable_income = max(ctx.amount, Money.zero())
 
-        tax = (chargeable_income * self.rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP) #round off to nearest hold number
+        tax = chargeable_income * self.rate #Money rounds off to nearest whole number
 
         return TaxResult(code=self.code, amount=tax, taxable_base=chargeable_income)

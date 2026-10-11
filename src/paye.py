@@ -1,8 +1,11 @@
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import date
+from decimal import Decimal
 
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError, InvalidIncomeError, NoScheduleForDateError, TaxConfigError
 
 
 class Paye(Tax):
@@ -22,22 +25,22 @@ class Paye(Tax):
         paye = base tax + (rate x (income - lower band limit))
         """
         
-        if ctx.residency not in self.schedules:
-            raise ValueError(f"No PAYE schedule for residency '{ctx.residency}'")
+        self._validate(ctx)
         
-        bands = self.schedules[ctx.residency]['bands']
+        schedule = self.schedules[ctx.residency]
+
+        bands = schedule['bands']
  
-        taxable_income = max(ctx.gross_monthly, Decimal("0")) #allowance not included
+        taxable_income = ctx.gross_monthly #allowance not included
  
-        band = self._determine_tax_band(bands, taxable_income)
+        band = self._determine_tax_band(bands, taxable_income.amount)
  
-        lower_limit = Decimal(str(band['lower']))
+        lower_limit = Money(Decimal(str(band['lower'])))
         rate = Decimal(str(band['rate']))
-        base_tax = Decimal(str(band['base_tax']))
+        base_tax = Money(Decimal(str(band['base_tax'])))
         tax = base_tax + rate * (taxable_income - lower_limit)
  
-        #round to nearest whole number
-        tax = tax.quantize(1, rounding=ROUND_HALF_UP)
+        #Money rounds to nearest whole number
  
         return TaxResult(code=self.code, amount=tax, taxable_base=taxable_income)
  
@@ -49,4 +52,22 @@ class Paye(Tax):
             upper = band['upper']
             if income > band['lower'] and (upper is None or income <= upper):
                 return band
-        return bands[0]
+        if income == 0:
+            return bands[0]
+        raise TaxConfigError(f"No PAYE band covers an income of {income}")
+
+    def _validate(self, ctx:TaxContext)->None:
+        """
+        Validation
+        """
+        if ctx.residency not in self.schedules:
+            raise InvalidContextError(f"No PAYE schedule for residency '{ctx.residency}'")
+        
+        schedule = self.schedules[ctx.residency]                
+        
+        # the schedule only applies from its start date
+        if ctx.pay_date < date.fromisoformat(schedule['effective_from']):
+            raise NoScheduleForDateError(f"No PAYE schedule for '{ctx.residency}' on {ctx.pay_date}; it starts {schedule['effective_from']}")
+        
+        if ctx.gross_monthly < Money.zero():
+            raise InvalidIncomeError(f"Gross monthly pay can't be negative: {ctx.gross_monthly}")

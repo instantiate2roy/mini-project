@@ -1,8 +1,10 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError, InvalidIncomeError
 
 
 class Vat(Tax):
@@ -26,16 +28,18 @@ class Vat(Tax):
         
         category = ctx.vat_category or self.default_category #if no vat category, use standard
         if category not in self.rates:
-            raise ValueError(f"Unknown VAT category '{category}'")
+            raise InvalidContextError(f"Unknown VAT category '{category}'")
 
         # taxable excluding VAT
-        taxable = max(ctx.amount, Decimal("0"))
+        if ctx.amount < Money.zero():
+            raise InvalidIncomeError(f"VAT amount can't be negative: {ctx.amount}")
+        taxable = ctx.amount
 
         
         rate = self.rates[category]
         if rate is None: #if rate null: no VAT at all, means exemption from VAT
-            return TaxResult(code=self.code, amount=Decimal("0"), taxable_base=taxable)
+            return TaxResult(code=self.code, amount=Money.zero(), taxable_base=taxable)
 
-        vat = (taxable * Decimal(str(rate))).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        vat = taxable * Decimal(str(rate))
 
         return TaxResult(code=self.code, amount=vat, taxable_base=taxable)

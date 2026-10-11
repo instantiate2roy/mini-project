@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from hypothesis import example, given, strategies as st
 
+from src.money import Money
 from src.rental import Rental
 from src.tax_context import TaxContext
 from src.wht import Wht
@@ -13,12 +14,12 @@ RENTAL = Rental('UG')
 
 
 def wht_for(payment, payment_type: str) -> Decimal:
-    return WHT.calculate(TaxContext(amount=Decimal(payment), payment_type=payment_type)).amount
+    return WHT.calculate(TaxContext(amount=Money(Decimal(payment)), payment_type=payment_type)).amount.amount
 
 
 def rental_for(rent, landlord_type: str = 'individual', expenses=0) -> Decimal:
-    ctx = TaxContext(amount=Decimal(rent), landlord_type=landlord_type, expenses=Decimal(expenses))
-    return RENTAL.calculate(ctx).amount
+    ctx = TaxContext(amount=Money(Decimal(rent)), landlord_type=landlord_type, expenses=Money(Decimal(expenses)))
+    return RENTAL.calculate(ctx).amount.amount
 
 
 # Withholding tax: one rate per payment type, checked on a payment of 1,000,000
@@ -45,7 +46,7 @@ def test_wht_rounds_to_whole_shillings():
 
 def test_wht_needs_a_known_payment_type():
     with pytest.raises(ValueError, match="Missing or Unknown WHT payment type 'None'"):
-        WHT.calculate(TaxContext(amount=Decimal(1_000)))
+        WHT.calculate(TaxContext(amount=Money(1_000)))
     with pytest.raises(ValueError, match="Missing or Unknown WHT payment type 'salary'"):
         wht_for(1_000, 'salary')
 
@@ -85,10 +86,10 @@ def test_company_rental_tax_with_the_expense_cap(expenses, expected):
 
 
 @pytest.mark.parametrize('ctx, message', [
-    (TaxContext(amount=Decimal(1), residency='non_resident'), 'No rental tax rules configured for non_resident'),
-    (TaxContext(amount=Decimal(1), landlord_type='trust'), "Unknown landlord type 'trust'"),
-    (TaxContext(amount=Decimal(-1)), "Rent can't be negative"),
-    (TaxContext(amount=Decimal(1), expenses=Decimal(-1)), "Expenses can't be negative"),
+    (TaxContext(amount=Money(1), residency='non_resident'), 'No rental tax rules configured for non_resident'),
+    (TaxContext(amount=Money(1), landlord_type='trust'), "Unknown landlord type 'trust'"),
+    (TaxContext(amount=Money(-1)), "Rent can't be negative"),
+    (TaxContext(amount=Money(1), expenses=Money(-1)), "Expenses can't be negative"),
 ])
 def test_rental_tax_rejects_bad_input(ctx, message):
     with pytest.raises(ValueError, match=message):
