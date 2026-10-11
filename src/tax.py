@@ -6,14 +6,19 @@ from .tax_result import TaxResult
 from .tax_context import TaxContext
 
 class Tax(ABC):
+    """
+    Base tax class, that all my tax type can extend
+    """
 
-    code: str
+    code: str = 'TAX' #tax type, overwritted by the child classes
+    
     tax_config_file = tax_config_file = Path(__file__).resolve().parent.parent / "configs" / "tax.json"
-    tax_configurations={}
-
+    
     def __init__(self, country_code: str = "UG"):
-        """Load json config"""
-        if not self.tax_config_file.exists():
+        """
+        Load taxation config from json file
+        """
+        if not self.tax_config_file.exists(): #Raise exception if no config file
             raise FileNotFoundError(f"Tax config not found: {self.tax_config_file}")
  
         data = json.loads(self.tax_config_file.read_text(encoding="utf-8"))
@@ -23,4 +28,7 @@ class Tax(ABC):
             
     @abstractmethod
     def calculate(self, ctx: TaxContext) -> TaxResult:
+        """
+        Abstract method to calcule tax, should build and return TaxResult obj 
+        """
         pass
