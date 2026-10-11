@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 from hypothesis import example, given, strategies as st
 
-from src.error import InvalidIncomeError, NoScheduleForDateError
+from src.error import InvalidContextError, InvalidIncomeError, NoScheduleForDateError, TaxConfigError
 from src.money import Money
 from src.paye import Paye
 from src.tax_context import TaxContext
@@ -103,6 +103,20 @@ def test_paye_never_exceeds_income(income, residency):
 def test_negative_income_is_rejected():
     with pytest.raises(InvalidIncomeError, match="can't be negative"):
         paye_for(-500_000)
+
+
+def test_unknown_residency_is_rejected():
+    with pytest.raises(InvalidContextError, match="No PAYE schedule for residency 'tourist'"):
+        paye_for(1_000_000, 'tourist')
+
+
+def test_income_outside_every_band_is_a_config_error():
+    # Edge case: a config whose bands stop at 100,000 must say so, not quietly use the first band
+    paye = Paye('UG')
+    paye.schedules = {'resident': {'effective_from': '2026-07-01',
+                                   'bands': [{'lower': 0, 'upper': 100_000, 'rate': Decimal('0.1'), 'base_tax': 0}]}}
+    with pytest.raises(TaxConfigError, match='No PAYE band covers an income of 200000'):
+        paye.calculate(TaxContext(gross_monthly=Money(200_000), pay_date=date(2026, 7, 1)))
 
 
 def test_no_schedule_before_it_takes_effect():
