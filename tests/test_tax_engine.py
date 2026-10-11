@@ -90,25 +90,25 @@ def test_tax_is_abstract():
 
 
 def test_unknown_country_is_rejected():
-    with pytest.raises(ValueError, match="Country 'KE' not found"):
+    with pytest.raises(TaxConfigError, match="Country 'KE' not found"):
         Vat('KE')
 
 
 def test_missing_config_file_is_reported(monkeypatch, tmp_path):
     monkeypatch.setattr(Tax, 'tax_config_file', tmp_path / 'missing.json')
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(TaxConfigError, match='Tax config not found'):
         Vat('UG')
 
 
 # NSSF: 5% employee, 10% employer, both on gross pay
 
 def test_nssf_employee_and_employer_shares():
-    result = Nssf().calculate(TaxContext(gross_monthly=Decimal(1_000_000)))
-    assert (result.amount, result.employer_amount) == (50_000, 100_000)
+    result = Nssf().calculate(TaxContext(gross_monthly=Money(1_000_000)))
+    assert (result.amount, result.employer_amount) == (Money(50_000), Money(100_000))
 
 
 def test_nssf_rounds_half_shillings_up():
-    assert Nssf().calculate(TaxContext(gross_monthly=Decimal(10))).amount == 1      # 5% x 10 = 0.5
+    assert Nssf().calculate(TaxContext(gross_monthly=Money(10))).amount == Money(1)      # 5% x 10 = 0.5
 
 
 # Local Service Tax: annual amount by income bracket, paid in 4 instalments from July to October
@@ -120,17 +120,17 @@ def test_nssf_rounds_half_shillings_up():
     (1_500_000, 25_000),    # top bracket: 100,000 a year / 4
 ])
 def test_lst_instalment_by_bracket(gross, instalment):
-    assert Lst().calculate(TaxContext(gross_monthly=Decimal(gross), month=7)).amount == instalment
+    assert Lst().calculate(TaxContext(gross_monthly=Money(gross), month=7)).amount == Money(instalment)
 
 
 @pytest.mark.parametrize('month', [1, 6, 11, 12])
 def test_no_lst_outside_july_to_october(month):
-    assert Lst().calculate(TaxContext(gross_monthly=Decimal(1_500_000), month=month)).amount == 0
+    assert Lst().calculate(TaxContext(gross_monthly=Money(1_500_000), month=month)).amount == Money.zero()
 
 
 def test_lst_needs_the_payroll_month():
-    with pytest.raises(ValueError, match='LST needs ctx.month'):
-        Lst().calculate(TaxContext(gross_monthly=Decimal(1_500_000)))
+    with pytest.raises(InvalidContextError, match='LST needs ctx.month'):
+        Lst().calculate(TaxContext(gross_monthly=Money(1_500_000)))
 
 
 # VAT: standard 18%, zero-rated 0%, exempt has no VAT
@@ -142,37 +142,64 @@ def test_lst_needs_the_payroll_month():
     (None, 1_800_000),      # no category means standard-rated
 ])
 def test_vat_by_supply_category(category, vat):
-    assert Vat().calculate(TaxContext(amount=Decimal(10_000_000), vat_category=category)).amount == vat
+    assert Vat().calculate(TaxContext(amount=Money(10_000_000), vat_category=category)).amount == Money(vat)
 
 
 def test_vat_rounds_to_whole_shillings():
-    assert Vat().calculate(TaxContext(amount=Decimal(3))).amount == 1               # 18% x 3 = 0.54
+    assert Vat().calculate(TaxContext(amount=Money(3))).amount == Money(1)               # 18% x 3 = 0.54
 
 
 def test_unknown_vat_category_is_rejected():
-    with pytest.raises(ValueError, match="Unknown VAT category 'luxury'"):
-        Vat().calculate(TaxContext(amount=Decimal(1), vat_category='luxury'))
+    with pytest.raises(InvalidContextError, match="Unknown VAT category 'luxury'"):
+        Vat().calculate(TaxContext(amount=Money(1), vat_category='luxury'))
 
 
 def test_net_vat_matches_the_notebook_example():
     # Sales: 10,000,000 + 4,500,000 standard; purchases: 5,000,000 + 1,200,000 standard
     vat = Vat()
-    output = sum(vat.calculate(TaxContext(amount=Decimal(a))).amount for a in (10_000_000, 4_500_000))
-    input_ = sum(vat.calculate(TaxContext(amount=Decimal(a))).amount for a in (5_000_000, 1_200_000))
-    assert (output, input_, output - input_) == (2_610_000, 1_116_000, 1_494_000)
+    output = sum(vat.calculate(TaxContext(amount=Money(a))).amount for a in (10_000_000, 4_500_000))
+    input_ = sum(vat.calculate(TaxContext(amount=Money(a))).amount for a in (5_000_000, 1_200_000))
+    assert (output, input_, output - input_) == (Money(2_610_000), Money(1_116_000), Money(1_494_000))
 
 
 # Corporate income tax: 30% of chargeable income for resident companies
 
 def test_cit_on_chargeable_income():
     # revenue 880,000,000 minus allowable deductions 435,000,000
-    assert Cit().calculate(TaxContext(amount=Decimal(445_000_000))).amount == 133_500_000
+    assert Cit().calculate(TaxContext(amount=Money(445_000_000))).amount == Money(133_500_000)
 
 
 def test_cit_on_a_loss_is_zero():
-    assert Cit().calculate(TaxContext(amount=Decimal(-5_000_000))).amount == 0
+    assert Cit().calculate(TaxContext(amount=Money(-5_000_000))).amount == Money.zero()
 
 
 def test_cit_only_applies_to_resident_companies():
-    with pytest.raises(ValueError, match='tax residents'):
-        Cit().calculate(TaxContext(amount=Decimal(1), residency='non_resident'))
+    with pytest.raises(InvalidContextError, match='tax residents'):
+        Cit().calculate(TaxContext(amount=Money(1), residency='non_resident'))
+
+
+# Errors: amounts must be Money, and bad input is never ignored
+
+@pytest.mark.parametrize('field, value', [
+    ('gross_monthly', Decimal(1_000)),     # a plain Decimal, not Money
+    ('amount', 1_000),
+    ('expenses', 1_000.5),                 # a float
+])
+def test_tax_context_only_accepts_money(field, value):
+    with pytest.raises(InvalidIncomeError, match=f'{field} must be Money'):
+        TaxContext(**{field: value})
+
+
+@pytest.mark.parametrize('tax, ctx', [
+    (Nssf(), TaxContext(gross_monthly=Money(-1))),
+    (Lst(), TaxContext(gross_monthly=Money(-1), month=7)),
+    (Vat(), TaxContext(amount=Money(-1))),
+])
+def test_negative_amounts_are_rejected(tax, ctx):
+    with pytest.raises(InvalidIncomeError, match="can't be negative"):
+        tax.calculate(ctx)
+
+
+def test_lst_month_must_be_1_to_12():
+    with pytest.raises(InvalidContextError, match='1-12, not 13'):
+        Lst().calculate(TaxContext(gross_monthly=Money(1_500_000), month=13))

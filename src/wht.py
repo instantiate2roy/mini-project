@@ -1,8 +1,10 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError, InvalidIncomeError
 
 
 class Wht(Tax): 
@@ -26,7 +28,7 @@ class Wht(Tax):
 
         payment = ctx.amount
 
-        tax = (payment * self.rates[ctx.payment_type]).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        tax = payment * self.rates[ctx.payment_type]
 
         return TaxResult(code=self.code, amount=tax, taxable_base=payment)
 
@@ -35,8 +37,8 @@ class Wht(Tax):
         Validation
         """
         if ctx.payment_type is None or ctx.payment_type not in self.rates:
-            raise ValueError(f"Missing or Unknown WHT payment type '{ctx.payment_type}'")
+            raise InvalidContextError(f"Missing or Unknown WHT payment type '{ctx.payment_type}'")
         
         # no negative gross payment/payout
-        if ctx.amount < 0:
-            raise ValueError(f"WHT payment can't be negative: {ctx.amount}")
+        if ctx.amount < Money.zero():
+            raise InvalidIncomeError(f"WHT payment can't be negative: {ctx.amount}")

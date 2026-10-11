@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import Decimal
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidIncomeError
 
 
 class Nssf(Tax):
@@ -28,9 +29,11 @@ class Nssf(Tax):
         employee portion =  gross monthly pay * employe rate
         employer portion = gross monthly pay *  employer rate
         """
-        base = max(ctx.gross_monthly, Decimal("0")) #allow is not included
+        if ctx.gross_monthly < Money.zero():
+            raise InvalidIncomeError(f"Gross monthly pay can't be negative: {ctx.gross_monthly}")
+        base = ctx.gross_monthly
 
-        employee = (base * self.employee_rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        employer = (base * self.employer_rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        employee = base * self.employee_rate
+        employer = base * self.employer_rate
 
         return TaxResult(code=self.code, amount=employee, taxable_base=base, employer_amount=employer)

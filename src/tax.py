@@ -1,9 +1,9 @@
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-
 from .tax_result import TaxResult
 from .tax_context import TaxContext
+from .error import TaxConfigError
 
 class Tax(ABC):
     """
@@ -19,11 +19,11 @@ class Tax(ABC):
         Load taxation config from json file
         """
         if not self.tax_config_file.exists(): #Raise exception if no config file
-            raise FileNotFoundError(f"Tax config not found: {self.tax_config_file}")
+            raise TaxConfigError(f"Tax config not found: {self.tax_config_file}")
  
         data = json.loads(self.tax_config_file.read_text(encoding="utf-8"))
         if country_code not in data["countries"]:
-            raise ValueError(f"Country '{country_code}' not found in {self.tax_config_file.name}")
+            raise TaxConfigError(f"Country '{country_code}' not found in {self.tax_config_file.name}")
         self.tax_configurations: dict = data["countries"][country_code]
             
     @abstractmethod

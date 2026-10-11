@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import Decimal
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError, InvalidIncomeError, TaxConfigError
 
 
 class Lst(Tax):
@@ -30,22 +31,18 @@ class Lst(Tax):
         installment = annual amount / number of installments 
         Note:the installments are the 4 months from july and october
         """
-        
-        #the payroll month is required
-        if ctx.month is None:
-            raise ValueError("LST needs ctx.month (1-12)")
 
-        #if value is negative, take 0 as the base
-        base = max(ctx.gross_monthly, Decimal("0"))
+        self._validate(ctx)
 
-        # only consider months between July-October
+        base = ctx.gross_monthly
+
+        #only consider months between July-October
         if ctx.month not in self.installment_months:
-            return TaxResult(code=self.code, amount=Decimal("0"), taxable_base=base)
-
+            return TaxResult(code=self.code, amount=Money.zero(), taxable_base=base)
         
-        annual_amount = Decimal(str(self._determine_bracket(base)['annual_amount']))
+        annual_amount = Money(Decimal(str(self._determine_bracket(base.amount)['annual_amount'])))
 
-        installment = (annual_amount / self.installments).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        installment = annual_amount / self.installments
 
         return TaxResult(code=self.code, amount=installment, taxable_base=base)
 
@@ -57,4 +54,17 @@ class Lst(Tax):
             upper = bracket['upper']
             if income > bracket['lower'] and (upper is None or income <= upper):
                 return bracket
-        return self.brackets[0]
+        if income == 0:
+            return self.brackets[0]
+        raise TaxConfigError(f"No LST bracket covers an income of {income}")
+
+    def _validate(self, ctx:TaxContext)-> None:
+        """
+        Validate tax context
+        """
+        if ctx.month is None:
+            raise InvalidContextError("LST needs ctx.month (1-12)")
+        if not 1 <= ctx.month <= 12:
+            raise InvalidContextError(f"LST month must be 1-12, not {ctx.month}")
+        if ctx.gross_monthly < Money.zero():
+            raise InvalidIncomeError(f"Gross monthly pay can't be negative: {ctx.gross_monthly}")

@@ -1,9 +1,12 @@
 """Tests for PAYE: fixed values at every band edge, plus property-based tests with hypothesis."""
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from hypothesis import example, given, strategies as st
 
+from src.error import InvalidIncomeError, NoScheduleForDateError
+from src.money import Money
 from src.paye import Paye
 from src.tax_context import TaxContext
 
@@ -12,7 +15,7 @@ PAYE = Paye('UG')       # loaded once; hypothesis runs each property test many t
 
 def paye_for(income, residency: str = 'resident') -> Decimal:
     """PAYE for one month's income."""
-    return PAYE.calculate(TaxContext(gross_monthly=Decimal(income), residency=residency)).amount
+    return PAYE.calculate(TaxContext(gross_monthly=Money(Decimal(income)), residency=residency)).amount.amount
 
 
 # Boundary tests at every band edge.
@@ -93,3 +96,21 @@ def test_paye_never_goes_down_when_income_goes_up(income, raise_by, residency):
 @given(income=incomes, residency=residencies)
 def test_paye_never_exceeds_income(income, residency):
     assert paye_for(income, residency) <= income
+
+
+# Errors: nothing fails silently
+
+def test_negative_income_is_rejected():
+    with pytest.raises(InvalidIncomeError, match="can't be negative"):
+        paye_for(-500_000)
+
+
+def test_no_schedule_before_it_takes_effect():
+    ctx = TaxContext(gross_monthly=Money(1_000_000), pay_date=date(2026, 6, 30))
+    with pytest.raises(NoScheduleForDateError, match='starts 2026-07-01'):
+        PAYE.calculate(ctx)
+
+
+def test_schedule_applies_from_its_first_day():
+    ctx = TaxContext(gross_monthly=Money(1_000_000), pay_date=date(2026, 7, 1))
+    assert PAYE.calculate(ctx).amount == Money(188_250)

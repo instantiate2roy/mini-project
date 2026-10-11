@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import Decimal
 from .tax import Tax
 from .tax_context import TaxContext
 from .tax_result import TaxResult
+from .money import Money
+from .error import InvalidContextError, InvalidIncomeError
 
 
 class Rental(Tax):
@@ -37,9 +38,9 @@ class Rental(Tax):
         allowed_expenses = min(ctx.expenses, rent * rules['expense_cap'])
 
         # chargeable is anything above the tax free threshold
-        chargeable = max(rent - allowed_expenses - rules['threshold'], Decimal("0"))
+        chargeable = max(rent - allowed_expenses - Money(rules['threshold']), Money.zero())
 
-        tax = (chargeable * rules['rate']).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        tax = chargeable * rules['rate']
 
         return TaxResult(code=self.code, amount=tax, taxable_base=chargeable)
 
@@ -48,15 +49,14 @@ class Rental(Tax):
         Run validation on tax context input
         """
         if ctx.residency != self.residency: #at the moment, the config only caters for residents
-            raise ValueError(f"No rental tax rules configured for {ctx.residency}")
+            raise InvalidContextError(f"No rental tax rules configured for {ctx.residency}")
             
         if ctx.landlord_type not in self.landlords:
-            raise ValueError(f"Unknown landlord type '{ctx.landlord_type}'")
+            raise InvalidContextError(f"Unknown landlord type '{ctx.landlord_type}'")
 
-        if ctx.amount < 0:
-            raise ValueError(f"Rent can't be negative: {ctx.amount}")
+        if ctx.amount < Money.zero():
+            raise InvalidIncomeError(f"Rent can't be negative: {ctx.amount}")
         
-        if ctx.expenses < 0:
-            raise ValueError(f"Expenses can't be negative: {ctx.expenses}")
+        if ctx.expenses < Money.zero():
+            raise InvalidIncomeError(f"Expenses can't be negative: {ctx.expenses}")
             
-
