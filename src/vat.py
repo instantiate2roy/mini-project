@@ -6,29 +6,35 @@ from .tax_result import TaxResult
 
 
 class Vat(Tax):
+    """
+    VAT class
+    """
 
     def __init__(self, country_code="UG"):
         super().__init__(country_code)
         self.code = 'VAT'
         config = self.tax_configurations['tax_types'][self.code]
-        self.rates = config['rates']
-        self.default_category = config['default_category']
+
+        self.rates, self.default_category = [config['rates'], config['default_category']]
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
-        # 1. Pick the category, falling back to the config default ("standard")
-        category = ctx.vat_category or self.default_category
+        """
+        Formula
+        vat =  value x rate
+        """
+        
+        category = ctx.vat_category or self.default_category #if no vat category, use standard
         if category not in self.rates:
             raise ValueError(f"Unknown VAT category '{category}'")
 
-        # 2. Taxable value of the supply, excluding VAT
+        # taxable excluding VAT
         taxable = max(ctx.amount, Decimal("0"))
 
-        # 3. Exempt supplies have rate null: no VAT at all
+        
         rate = self.rates[category]
-        if rate is None:
+        if rate is None: #if rate null: no VAT at all, means exemption from VAT
             return TaxResult(code=self.code, amount=Decimal("0"), taxable_base=taxable)
 
-        # 4. VAT = value x rate, rounded to whole shillings
         vat = (taxable * Decimal(str(rate))).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         return TaxResult(code=self.code, amount=vat, taxable_base=taxable)

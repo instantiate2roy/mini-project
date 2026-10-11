@@ -4,6 +4,9 @@ from decimal import Decimal
  
 @dataclass(frozen=True)
 class TaxResult:
+    """
+    template for the tax result object
+    """
     code: str
     amount: Decimal
     taxable_base: Decimal

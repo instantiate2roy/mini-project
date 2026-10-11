@@ -6,23 +6,35 @@ from .tax_result import TaxResult
 
 
 class Cit(Tax):
+    """
+    CIT tax class
+    note: 
+    - CIT is only for companies based in UG, so residency check is needed
+    - is only applied on income for the year; a loss means no tax
+    """
 
     def __init__(self, country_code="UG"):
         super().__init__(country_code)
         self.code = 'CIT'
         config = self.tax_configurations['tax_types'][self.code]
-        self.rate = Decimal(str(config['rate']))
-        self.residency = config['residency']
+        
+        #extract rate, and residency
+        self.rate, self.residency = [Decimal(str(config['rate'])),config['residency']]
+         
 
     def calculate(self, ctx: TaxContext) -> TaxResult:
-        # 1. Only the configured residency is supported (Uganda: resident companies)
+        """
+        Tax formula
+        cit = chargeable income * tax rate
+        """
+        
+        #CIT only applies for companies based in UG
         if ctx.residency != self.residency:
-            raise ValueError(f"No CIT rate configured for residency '{ctx.residency}'")
+            raise ValueError(f"CIT only applies for for tax residents")
 
-        # 2. Chargeable income for the year; a loss means no tax
-        chargeable = max(ctx.amount, Decimal("0"))
+        #if value is negative, take 0 as the chargeable
+        chargeable_income = max(ctx.amount, Decimal("0"))
 
-        # 3. CIT = chargeable income x rate, rounded to whole shillings
-        tax = (chargeable * self.rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        tax = (chargeable_income * self.rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP) #round off to nearest hold number
 
-        return TaxResult(code=self.code, amount=tax, taxable_base=chargeable)
+        return TaxResult(code=self.code, amount=tax, taxable_base=chargeable_income)

@@ -5,18 +5,15 @@ from decimal import Decimal, ROUND_HALF_UP
 from functools import total_ordering
 
 
-# dataclass provides __init__, ==, hashing and immutability (frozen=True).
-# total_ordering builds >, <= and >= from __lt__.
 @total_ordering
 @dataclass(frozen=True)
 class Money:
     """
     An amount of money, stored as a Decimal along with its currency (UGX by default).
 
-    Amounts are rounded to whole shillings as soon as they're created,
-    with halves rounded away from zero, so 0.5 becomes 1 and -0.5 becomes -1.
-    Adding, subtracting, multiplying or dividing always gives a new Money,
-    so every result is rounded the same way.
+    - Amounts are rounded to whole shillings as soon as they're created, with halves rounded away from zero, so 0.5 becomes 1 and -0.5 becomes -1.
+    - Adding, subtracting, multiplying or dividing always gives a new Money,
+    - so every result is rounded the same way.
     """
 
     amount: Decimal
@@ -26,8 +23,7 @@ class Money:
         if isinstance(self.amount, float) or not isinstance(self.amount, (Decimal, int)):
             raise TypeError(f"Money needs a Decimal or int, not {type(self.amount).__name__}")
 
-        # round to whole shillings, halves away from zero
-        rounded = Decimal(self.amount).quantize(1, rounding=ROUND_HALF_UP)
+        rounded = Decimal(self.amount).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
 
         # the class is frozen, so this is the only place the amount can be set
         object.__setattr__(self, "amount", rounded)
@@ -51,7 +47,7 @@ class Money:
 
     def __radd__(self, other) -> Money:
         """
-        sum() starts adding from 0, so 0 + Money has to work
+        sum starts adding from 0, so 0 + Money has to work
         """
         if other == 0:
             return self
